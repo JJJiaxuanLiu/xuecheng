@@ -25,3 +25,5 @@ logs
 *.ipr
 *.log
 *.log.*
+/logs/
+**/logs/

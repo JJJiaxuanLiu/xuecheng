@@ -11,6 +11,7 @@ import com.xuecheng.content.mapper.CourseCategoryMapper;
 import com.xuecheng.content.mapper.CourseMarketMapper;
 import com.xuecheng.content.model.dto.AddCourseDto;
 import com.xuecheng.content.model.dto.CourseBaseInfoDto;
+import com.xuecheng.content.model.dto.EditCourseDto;
 import com.xuecheng.content.model.dto.QueryCourseParamsDto;
 import com.xuecheng.content.model.po.CourseBase;
 import com.xuecheng.content.model.po.CourseCategory;
@@ -170,7 +171,7 @@ public class CourseBaseServiceImpl implements CourseBaseService {
      * @param courseId
      * @return
      */
-    private CourseBaseInfoDto getCourseBaseInfo(Long courseId){
+    public CourseBaseInfoDto getCourseBaseInfo(Long courseId){
         CourseBase courseBase = courseBaseMapper.selectById(courseId);
         if(courseBase == null){
             return null;
@@ -189,6 +190,36 @@ public class CourseBaseServiceImpl implements CourseBaseService {
         courseBaseInfoDto.setMtName(courseCategoryByMt.getName());
 
         return courseBaseInfoDto;
+
+    }
+
+    @Transactional
+    @Override
+    public CourseBaseInfoDto updateCourseBase(Long companyId, EditCourseDto dto) {
+        Long courseId = dto.getId();
+        CourseBase courseBase = courseBaseMapper.selectById(courseId);
+        if(courseBase == null){
+            XueChengPlusException.cast("课程不存在");
+        }
+
+        if(!courseBase.getCompanyId().equals(companyId)){
+            XueChengPlusException.cast("本机构只能修改本机构课程！");
+        }
+
+        BeanUtils.copyProperties(dto,courseBase);
+        courseBase.setChangeDate(LocalDateTime.now());
+
+        int i = courseBaseMapper.updateById(courseBase);
+        if(i<=0) XueChengPlusException.cast("课程基本信息更新失败");
+
+        CourseMarket courseMarket = new CourseMarket();
+        BeanUtils.copyProperties(dto,courseMarket);
+        int j = saveCourseMarket(courseMarket);
+        if(j<=0) XueChengPlusException.cast("更新课程营销表失败");
+
+        CourseBaseInfoDto courseBaseInfo = this.getCourseBaseInfo(courseId);
+        return courseBaseInfo;
+
 
     }
 }
